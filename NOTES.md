@@ -638,9 +638,266 @@ a4 = std::move(a3);
 
 ### Lazy copying
 
+Deep copying is usually "the right thign to do". But it can be very expensive. We have seen that sing move semantics can help, but there is an alternative.
 
+**Lazy copy** is a combination of shallow and deep copy. It takes advantage of the speed of shallow copy whenever possible, but functions just as a deep copy. It is only useful when data is not modified very often.
 
+- When initially copying an object, a fast shallow copy is used. A list or a counter is used to track the objects sharing the same data.
+- When the program wants to modify an object, it can thus determine if the data is shared and can do a deep copy if necessary, removing the object from the list/resetting the counter.
+- The downside is the overhead present in the bookkeeping.
 
+```cpp
+class array_2d
+{
+public:
+    array_2d();
+    array_2d(int, int);
+    array_2d(array_2d const &);
+    array_2d &operator=(array_2d const &);
+    ~array_2d();
+    double &&element(int, int) const;
+    double &operator()(int, int);
+
+private:
+    class data
+    {
+    public:
+        data();
+        data(int i, int j);
+        data(data const &d);
+        ~data();
+        double &element(int i, int j); // reference to given entry
+        // use_count is the number of array_2d objects that point at this
+        // use_count must be initialized to 1 by all constructors
+        size_t use_count{1};
+        double *array{nullptr}; // pointer to hold data
+        int dim1{};
+        int dim2{}; // dimensions
+    };
+    data *data_storage{nullptr};
+};
+```
+
+```cpp
+array_2d::data::data() = default;
+array_2d::data::data(int i, int j) : array{new double[i * j]}, dim1{i}, dim2{j} {}
+array_2d::data::data(data const &d) // deep copy
+{
+    std::cout << " deep copy\n";
+    array = new double[(d.dim1) * (d.dim2)];
+    for (int i{}; i < d.dim1 * d.dim2; i++)
+        array[i] = d.array[i];
+}
+array_2d::data::~data()
+{
+    std::cout << " deleting data\n";
+    use_count = 0;
+    dim1 = 0;
+    dim2 = 0;
+    delete[] array;
+}
+double &array_2d::data::element(int i, int j)
+{
+    // could do bounds checking
+    return array[dim1 * i + j];
+}
+array_2d::array_2d() : data_storage{new data()} {}
+array_2d::array_2d(int i, int j) : data_storage{new data{i, j}} {}
+array_2d::array_2d(array_2d const &array_cp) // copy constructor
+    : data_storage{array_cp.data_storage}    // make sure our data points to f's data
+{
+    ++data_storage->use_count; // increment the counter
+}
+```
+
+# Week 7
+
+## Prelecture
+
+### Inheritance and access
+
+```cpp
+class celestial_object
+{
+public:
+    std::string name;
+    double mass, distance, luminosity; // for compactness
+public:
+    celestial_object() : name{"no-name"}, mass{}, distance{}, luminosity{} {}
+    celestial_object(const std::string nm, const double l, const double m, const double d) : name{nm}, mass{m}, distance{d}, luminosity{l} {}
+    std::string getname() const { return name; }
+};
+class galaxy : public celestial_object
+{
+private:
+    std::string hubble_type;
+public:
+    galaxy() : celestial_object{}, hubble_type{"Sc"} {}
+    galaxy(const std::string nm, const double l, const double m, const double d,
+           const std::string ht) : celestial_object{nm, l, m, d}, hubble_type{ht} {}
+};
+```
+
+| (Base class access)   | `Private` | `Protected` | `Public` |
+| --------------------- | --------- | ----------- | -------- |
+| Class members         | Yes       | Yes         | Yes      |
+| Derived class members | No        | Yes         | Yes      |
+| Outside               | No        | No          | Yes      |
+
+```cpp
+class celestial_object
+{
+private:
+    std::string name;
+```
+
+- Derived class can not access private data from the base class.
+
+```cpp
+class celestial_object
+{
+protected:
+    std::string name;
+```
+
+- Protected members can be accessed in the derived class.
+
+| Base class access specifier(⬇️) \ Inheritance specification(➡️） | `private`     | `protected`   | `public`      |
+| ------------------------------------------------------------ | ------------- | ------------- | ------------- |
+| `private`                                                    | Not inherited | Not inherited | Not inherited |
+| `protected`                                                  | `private`     | `protected`   | `protected`   |
+| `public`                                                     | `private`     | `protected`   | `public`      |
+
+```cpp
+class galaxy : public celestial_object
+{
+private:
+// Base class access specifier: 
+```
+
+- When using `public`, the access levels for our inherited (non-private) members are the same as they were in the base class.
+  - `protected` members of the base class are inherited as protected members of the derived class
+
+- Base class specifier sets maximum access level.
+- Private members are never accessible outside a class.
+
+### Constructors in derived class
+
+```cpp
+galaxy(const std::string nm, const double l, const double m, const double d,
+       const std::string ht) : celestial_object{nm, l, m, d}, hubble_type{ht} {}
+```
+
+- If we don't specify anything, the default constructor for `celestial_object` is invoked whenever we create a galaxy.
+- We need to invoke ase class constructors first so that is data to be inherited by the instance of the derived class.
+- The base class constructor is called first, followed by the derived class constructor.
+- The reverse happen for the destructor
+
+### Overriding functions
+
+C++ allows us to define funcions in base and derived class with the same name (overriding).
+
+- Overriding requires both functions to have exactly the same parameter list.
+- Overloading requires functions to have different parmeter list.
+
+### Multiple inheritance
+
+```cpp
+class A
+{
+protected:
+    double Ax;
+
+public:
+    A(const double Axin) : Ax{Axin} {}
+    void show() { std::cout << "Ax=" << Ax << std::endl; }
+};
+class B
+{
+protected:
+    double Bx;
+
+public:
+    B(const double Bxin) : Bx{Bxin} {}
+    void show() { std::cout << "Bx=" << Bx << std::endl; }
+};
+class C : public A, public B
+{ // Single derived class
+    double Cx;
+
+public:
+    C(const double Axin, const double Bxin, const double Cxin) : A{Axin}, B{Bxin}, Cx{Cxin} {}
+    void show() { std::cout << "Ax,Bx,Cx = " << Ax << " " << Bx << " " << Cx << std::endl; }
+};
+```
+
+```mermaid
+flowchart LR
+A[A] --> C[C]
+B[B] --> C[C]
+```
+
+```cpp
+class celestial_object
+{
+protected:
+    std::string name{"no_name"};
+    double mass{};
+    double distance{};
+    double luminosity{};
+
+public:
+    celestial_object() = default;
+    celestial_object(const std::string nm, const double l, const double m, const double d) : name{nm}, mass{m}, distance{d}, luminosity{l} {}
+    ~celestial_object() {}
+    std::string get_name() const { return name; }
+    friend std::ostream &operator<<(std::ostream &, const celestial_object &);
+};
+class star : public celestial_object
+{
+protected:
+    std::string spectral_class{"None"};
+
+public:
+    star() : celestial_object{}, spectral_class{"None"} {}
+    star(const std::string nm, const double l, const double m, const double d,
+         const std::string sc) : celestial_object{nm, l, m, d}, spectral_class{sc} {}
+    ~star() {}
+    friend std::ostream &operator<<(std::ostream &, const star &);
+};
+class neutron_star : public star
+{
+protected:
+    double radius; // radius in km
+public:
+    neutron_star() : star{}, radius{} { spectral_class = "pulsar"; }
+    neutron_star(const std::string nm, const double l, const double m, const double d,
+                 const double r) : star{nm, l, m, d, "pulsar"}, radius{r} {}
+    ~neutron_star() {}
+    friend std::ostream &operator<<(std::ostream &, const neutron_star &);
+};
+std::ostream &operator<<(std::ostream &o, const neutron_star &st)
+{
+    o << " neutron star " << st.name << ": " << std::endl
+      << " radius " << st.radius << " Rsun" << std::endl;
+    o << static_cast<star>(st);
+    return o;
+}
+std::ostream &operator<<(std::ostream &o, const star &st)
+{
+    o << " spectral class " << st.spectral_class << std::endl;
+    o << static_cast<celestial_object>(st);
+    return o;
+}
+std::ostream &operator<<(std::ostream &o, const celestial_object &co)
+{
+    o << " mass " << co.mass << " Msun,"
+      << " luminosity " << co.luminosity << " ,"
+      << " distance (z) " << co.distance << std::endl;
+    return o;
+}
+double parsectoz(const double dist) { return 2.37E-10 * dist; }
+```
 
 
 
