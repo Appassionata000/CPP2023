@@ -2,6 +2,9 @@
 Examples from course video.
 Can be found in https://github.com/UofM-PHYS30762/prelecture-codes/tree/main/Prelecture5
 */
+
+#include <iostream>
+
 class vector3
 {
 friend vector3 operator+(double scalar, const vector3 &v);
