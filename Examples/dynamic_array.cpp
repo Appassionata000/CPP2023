@@ -113,11 +113,6 @@ int main()
     std::cout << "a2[1] = " << a2[1] << std::endl;
     std::cout << "a3[1] = " << a3[1] << std::endl;
     std::cout << "a4[1] = " << a4[1] << std::endl;
-    
-    
+       
     return 0;
 }
-
-
-
- 
