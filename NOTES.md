@@ -465,8 +465,6 @@ int const ** p_int;				// pointer to (a pointer to a const int)
 int const * const * p_int;		// const pointer to (a const pointer to an int)
 ```
 
-
-
 # Week 6
 ## Prelecture
 
@@ -521,7 +519,134 @@ dynamic_array & dynamic_array::operator=(dynamic_array &arr)
 }
 ```
 
-The assignment operator
+- When we are overloading `operator=`, we need to protect against possible self-assignment. In this case, code would crash since it could delete the object's data before trying to copy itself.
+- When returning an object by value a copy is made and returned, the original object is then destroyed.
+
+- The assignment operator returns a reference to the basic type `dynamic_array &`, so one can write
+
+```cpp
+a = b = c;	// same as a = (b = c)
+```
+
+### Rvalues and lvalues
+
+**Lvalue** is something where we can take the address, something in (semi) pernmanet memory. An **rvalue** refers to a temporary object; in order to capture these in permanent memory, the only way is to copy them into an lvalue.
+
+#### rvalue reference
+
+Allows us to write functions that specifically deal with mutable temporary variables.
+
+```cpp
+print_reference(const String& str) { std::cout << str; }
+```
+
+- Accepts any argument it is given, lvalue or rvalue.
+
+```cpp
+print_reference(String&& str) { std::cout << str; }
+```
+
+```cpp
+print_references(std::string{"Hello World"}) 	// pass a rvalue
+```
+
+- Picks up a mutable rvalue.
+
+#### Move semantics
+
+The most common way of using rvalue refereces is in the **move constructor** and **move assignment**. They take an rvalue reference.
+
+```cpp
+// Move constructor
+dynamic_array::dynamic_array(dynamic_array &&arr)
+{
+    size = arr.size;
+    array = arr.array;
+    arr.size = 0;
+    arr.array = nullptr; 
+}
+```
+
+```cpp
+// Move assignment operator
+dynamic_array & dynamic_array::operator=(dynamic_array &&arr)
+{
+    std::swap(size, arr.size);
+    std::swap(array, arr.array);
+    return *this;
+}
+```
+
+#### `std::move`
+
+Suppose we know an lvalue object that is no longer useful, and we do want to use the moe assignment to reassign its data.
+
+`std::move` turns an lvalue into something that can be used like an rvalue. `std::move` itself moves nothing.
+
+```cpp
+dynamic_array a3(2);
+a3[0] = 0.5;
+a3[1] = 1.0;
+dynamic_array a4;
+a4 = std::move(a3);
+```
+
+## Lecture
+
+### Quizzes
+
+> Difference between `myclass a2{a1}`, `myclass a2=a1`, `myclass a2; a2=a1`
+>
+> > Direct initialisation (`myclass a2{a1}`): It behaves like a function call to an overloaded function, the functions are the constructors of `myclass` (including explicit ones), and the argument is `a1`.
+> >
+> > Copy initialisation (`myclass a2=a1`): It constructs an implicit conversion sequence. It tries to cast `a1` to an object of type `myclass`. It then copies the object into the initialised object, so a copy constructor is need too.
+> >
+> > Assignment (`myclass a2; a2=a1`): First constructs `a2` and then calls the assignment operator in `myclass`.
+>
+> What is the default type of copy in the overloaded assignment operator`=`, if we don't define our own.
+>
+> > Bitwise copy (shallow copy)
+>
+> Why is it potentially more difficult to "delete" the storage of an object when using shallow copying than when using deep copying?
+>
+> > Because it is hard to keep track of whether data inside the object is still in use.
+>
+> What is the difference between the copy assignment operator and the copy constructor?
+>
+> > The first one just copies the data from one object to a new object. The second one creates a new object using the data of the input object as a template.
+>
+> About `this` pointer
+>
+> > It is passed as a hidden argument to all non-static function calls and is available as a local variable within the body of all non-static functions. 
+> >
+> > It is not available in static member functions, since static member functions can be called without any object (i.e., with only the class name). Those functions effectively act on the class.
+>
+> Is `f1()` an rvalue or lvalue?
+>
+> ```cpp
+> int p{10};
+> int& f1() {return p;}
+> ```
+>
+> > lvalue. We can write `f1()=20`.
+>
+> A move assignment operator takes as argument ( ).
+>
+> > An rvalue reference
+> >
+> > It takes a reference to a temporary value since it must be able to deal with the data inside it without doing damage to the integrity of the data held in the code. So reference for access to that data, rvalue we know we can safely modify the object.
+
+### Lazy copying
+
+
+
+
+
+
+
+
+
+
 
 
 

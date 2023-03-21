@@ -14,3 +14,4 @@
 *.a
 .DS_Store
 
+Tests/
