@@ -35,7 +35,7 @@ matrices start at 1!
 
 #### Variadic templates
 
-> (ref)[https://stackoverflow.com/questions/1657883/variable-number-of-arguments-in-c]
+> [ref](https://stackoverflow.com/questions/1657883/variable-number-of-arguments-in-c)
 
 ```cpp
 template<typename T> void func(std::vector<T> vec)
