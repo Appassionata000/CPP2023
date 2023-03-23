@@ -899,6 +899,260 @@ std::ostream &operator<<(std::ostream &o, const celestial_object &co)
 double parsectoz(const double dist) { return 2.37E-10 * dist; }
 ```
 
+# Week 8
+
+## Prelecture
+
+### Polymorphism
+
+Polymorphism: can decide at run-time what methods to invoke for a certain class, based on the object itself.
+
+```cpp
+class particle
+{
+public:
+    virtual ~particle() {}
+    virtual void info() { ... }
+};
+
+class ion : public particle
+{
+public"
+    ~ion() {}
+    void info() { ... }
+};
+```
+
+- If a function is **virtual in a base class**, then it is possible for the derived class's function to be called from a pointer that points to an object of the derived class.
+
+```cpp
+particle *particle_pointer = new ion{1,2};
+particle_pointer->info(); 
+delete particle_pointer;	// For each new there must be a delete
+particle_pointer = new electron;
+particle_pointer->info();
+delete particle_pointer;
+```
+
+- Destructors are called whenever an object goes out of scope. When use base class pointers, make sure your base class **destructor is virtual**.
+  - If base class destructor is not a virtual function, this will always be called in preference to any derived class destructor => memory leak.
+
+- For each `new` there must be a `delete`
+
+### Abstract base class
+
+We can (and sometimes should) use the base class as interface only.
+
+A base class that only declares existence of virtual functions is known as an **abstract base class**.
+
+- Formally, a base class becomes abstract base class when converting at lest one virtual function to a pure virtual function.
+
+- In the derived class we now **must override the virtual functions and define their action**, otherwise the derived class is also abstract.
+- The derived classes can still contain their own data and member functions.
+
+```cpp
+// Only abstract functions in base class can't be instantiated
+class particle
+{
+public:
+    virtual void info() = 0;
+};
+int main
+{
+    particle abstractParticle;	// error
+```
+
+```cpp
+// Example of abstract class
+class particle
+{
+public:
+    virtual ~particle() {}   // Need this!
+    virtual void info() = 0; // pure virtual function
+};
+
+class electron : public particle
+{
+private:
+    int charge;
+public:
+    electron() : charge{-1} {}
+    ~electron() { std::cout << "Electron destructor called" << std::endl; }
+    void info() { std::cout << "electron: charge=" << charge << "e" << std::endl; }
+};
+
+class ion : public particle
+{
+private:
+    int charge, atomic_number;
+public:
+    // Note constructor short-hand!
+    ion(int q, int Z) : charge{q}, atomic_number{Z} {}
+    ~ion() { std::cout << "Ion destructor called" << std::endl; }
+    void info() { std::cout << "ion: charge=" << charge
+                            << "e, atomic number=" << atomic_number << std::endl; }
+};
+```
+
+The destructor needs to have implementation
+
+```cpp
+virtual ~particle() = 0 	// Error
+```
+
+#### Mixed array
+
+```cpp
+particle *particle_array[2];
+particle_array[0] = new particle{2}; // He 
+particle_array[1] = new ion{1,2};    // He+
+particle_array[0]->info(); // print info for particle
+particle_array[1]->info(); // print info for ion
+delete particle_array[0]; particle_array[0]=0;
+delete particle_array[1]; particle_array[1]=0;
+```
+
+#### Mixed functions
+
+Mith polymorphism, you don't need to make overloaded versions of the functions with different argument for each type of derived class.
+
+```cpp
+void prettyParticlePrinter (particle* theParticle) {
+   //add some ascii art
+   std::cout << "_U__U__U__U__U__U__U__U__U__U__U__U__U_" << std::endl;
+   //then call the function 
+   theParticle->info();
+}
+```
+
+```cpp
+// Array of base and derived objects, one particle and one ion 
+particle *particle_array[2];
+particle_array[0] = new particle{2}; // He 
+particle_array[1] = new ion{1,2};    // He+
+
+prettyParticlePrinter(particle_array[0]);
+prettyParticlePrinter(particle_array[1]);
+
+delete particle_array[0]; particle_array[0] = 0;
+delete particle_array[1]; particle_array[1] = 0;
+```
+
+#### Polymorphic vector
+
+```cpp
+std::vector<particle*> particles;
+particles.push_back(new ion{1,3});
+particles.push_back(new electron);
+particles[0]->info();
+particles[1]->info();
+
+for (auto particle_it = particles.begin(); particle_it < particles.end(); ++particle_it) 
+    delete *particle_it;
+particles.clear();
+std::cout << "particle_vector now has size "<< particles.size() << std::endl; 
+```
+
+The `std::vector::clear()` function does not deallocate any memory from the vector itself; it simply removes all elements from the vector. This means that if the vector is resized again after calling `clear()`, it may still be able to hold the same amount of elements without allocating additional memory.
+
+# Week 9
+
+## Prelecture
+
+### Static data
+
+```cpp
+class my_class
+{
+    static int n_objects;
+}
+int my_class::n_objects{};	// define static data member outside the class.
+```
+
+- Static variables are safer than global variables.
+
+### Template
+
+A template is a blueprint for a generic function or class, or a cookie-cutter to build a family of similar functions or classes.
+
+- Templates do not divide header and implementation
+
+- Templates allow functions and classes to be created for generic datatypes
+
+```cpp
+template <class c_type> c_type maxval(c_type a, c_type b)
+{
+    return (a > b) ? a : b;
+}
+```
+
+```cpp
+maxval<double>(x1, x2);
+```
+
+- The cmoplier will not use the function template until an instance is created in the code.
+
+#### Template classes
+
+``` cpp
+template<class c_type> class twonums
+{
+private:
+    c_type x, y;
+public:
+    twonums(c_type x_, c_type y_) : x{x_}, y{y_} {}
+}
+```
+
+```cpp
+twonums<int> int_pair{x, y}
+twonums<double> double_pair{a, b};
+```
+
+#### Separate templates into interface and implementation
+
+If a member function contains a parameter that is an instance of a template class...
+
+```cpp
+// Copy constructor
+twonums(const twonums<c_type> &tn)
+```
+
+```cpp
+// Defined outside the class
+template <class c_type> twonums<c_type>::twonums(const twonums<c_ctype> &tn) { x = tn.x; y = tn.y; }
+```
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

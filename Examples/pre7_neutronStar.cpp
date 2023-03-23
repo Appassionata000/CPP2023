@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+
 class celestial_object
 {
 protected:
@@ -31,6 +32,7 @@ class neutron_star : public star
 {
 protected:
     double radius; // radius in km
+
 public:
     neutron_star() : star{}, radius{} { spectral_class = "pulsar"; }
     neutron_star(const std::string nm, const double l, const double m, const double d,
@@ -38,6 +40,7 @@ public:
     ~neutron_star() {}
     friend std::ostream &operator<<(std::ostream &, const neutron_star &);
 };
+
 std::ostream &operator<<(std::ostream &o, const neutron_star &st)
 {
     o << " neutron star " << st.name << ": " << std::endl
@@ -45,12 +48,14 @@ std::ostream &operator<<(std::ostream &o, const neutron_star &st)
     o << static_cast<star>(st);
     return o;
 }
+
 std::ostream &operator<<(std::ostream &o, const star &st)
 {
     o << " spectral class " << st.spectral_class << std::endl;
     o << static_cast<celestial_object>(st);
     return o;
 }
+
 std::ostream &operator<<(std::ostream &o, const celestial_object &co)
 {
     o << " mass " << co.mass << " Msun,"
@@ -58,7 +63,12 @@ std::ostream &operator<<(std::ostream &o, const celestial_object &co)
       << " distance (z) " << co.distance << std::endl;
     return o;
 }
-double parsectoz(const double dist) { return 2.37E-10 * dist; }
+
+double parsectoz(const double dist)
+{
+    return 2.37E-10 * dist;
+}
+
 int main()
 {
     neutron_star crab("crab", 0, 1.4, parsectoz(2200), 1.437815e-5);
