@@ -31,14 +31,20 @@ matrices start at 1!
 
 • The assignment operator and copy constructor functions should perform deep copies of the data.
 
-• Challenge: a recursive calculation of a determinant.
+• A recursive calculation of a determinant.
 
-#### Variadic templates
 
-> [ref](https://stackoverflow.com/questions/1657883/variable-number-of-arguments-in-c)
-
+<!-- ```cpp
+template <typename T> void func1(std::initializer_list<T> list)
+{
+    for (auto elem : list)
+    {
+        std::cout << elem << std::endl;
+    }
+}
+```
 ```cpp
-template<typename T> void func(std::vector<T> vec)
+template<typename T> void func2(std::vector<T> vec)
 {
     for (typename std::vector<T>::iterator iter = vec.begin(); iter != vec.end(); ++iter)
     {
@@ -46,3 +52,6 @@ template<typename T> void func(std::vector<T> vec)
     }
 }
 ```
+```cpp
+func1({10, 20, 30, 40})
+``` -->
